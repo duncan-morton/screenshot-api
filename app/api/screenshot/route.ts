@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
         height: DEFAULT_VIEWPORT_HEIGHT,
       },
       executablePath,
-      headless: useChromiumArgs ? chromium.headless : true,
+      headless: true,
     });
 
     const page = await browser.newPage();
@@ -205,9 +205,10 @@ export async function POST(request: NextRequest) {
       type: format,
       fullPage: true,
     });
+    const imageBuffer = Buffer.from(screenshot);
 
     const contentType = format === "jpeg" ? "image/jpeg" : "image/png";
-    return new NextResponse(screenshot, {
+    return new NextResponse(imageBuffer, {
       status: 200,
       headers: {
         "Content-Type": contentType,
