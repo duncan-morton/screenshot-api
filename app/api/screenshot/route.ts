@@ -7,6 +7,7 @@ import puppeteer from "puppeteer-core";
 import { checkRateLimit } from "./rate-limit";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 type ScreenshotFormat = "png" | "jpeg";
 
@@ -97,27 +98,22 @@ async function canAccess(path: string): Promise<boolean> {
 }
 
 async function resolveExecutablePath(): Promise<ExecutableInfo> {
+  const isLinux = process.platform === "linux";
+
+  // Vercel/serverless Linux: use Sparticuz Chromium executable directly.
+  if (isLinux) {
+    const executablePath = await chromium.executablePath();
+    return {
+      executablePath,
+      useChromiumArgs: true,
+    };
+  }
+
   if (process.env.CHROMIUM_PATH) {
     return {
       executablePath: process.env.CHROMIUM_PATH,
       useChromiumArgs: false,
     };
-  }
-
-  try {
-    // On non-Linux local development machines, prefer installed browsers.
-    const isLikelyServerlessLinux = process.platform === "linux";
-    if (isLikelyServerlessLinux) {
-      const sparticuzPath = await chromium.executablePath();
-      if (await canAccess(sparticuzPath)) {
-        return {
-          executablePath: sparticuzPath,
-          useChromiumArgs: true,
-        };
-      }
-    }
-  } catch {
-    // Fall through to local browser path lookup.
   }
 
   for (const localPath of LOCAL_CHROME_PATHS) {
